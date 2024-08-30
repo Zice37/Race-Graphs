@@ -2,14 +2,18 @@
 import sys
 import pandas as pd
 import matplotlib.pyplot as plt
+import os
+
 
 #CSV v3 de RaceChrono
 
 RENAME_PREFIX = '.copy-'
 COLORS = ['blue', 'red', 'green', 'yellow', 'purple']
 
-def rename_file(filename):
-    return RENAME_PREFIX + filename
+def rename_file(filepath):
+    directory, filename = os.path.split(filepath)    
+    new_filename = RENAME_PREFIX + filename
+    return os.path.join(directory, new_filename)
 
 def eliminar_cabeceras(filename):
     with open(filename, 'r') as file:
