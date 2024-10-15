@@ -1,179 +1,177 @@
 #!/usr/bin/python3
-import matplotlib
-matplotlib.use("TkAgg")  # Asegúrate de que estás usando un backend interactivo
-import tkinter as tk
 import matplotlib.pyplot as plt
 import os
-from tkinter import filedialog, messagebox, ttk
 from plot import analizar_csv, trim_csv, COLORS, RENAME_DIR, RENAME_PREFIX, clear_cache_directory, rename_file
-
-def add_file_row_header():
-    """Agrega una fila a la lista de archivos."""
-    row_frame = tk.Frame(file_list_frame)
-    row_frame.pack(side="top",padx=5, pady=5)  # Usar "center" para centrar horizontalmente
-    row_frame.pack(fill='both', expand=True)
-
-    filename_label = tk.Label(row_frame, text="Fichero", width=30, anchor='w')
-    filename_label.pack(side='left', padx=5)
-
-    combo = ttk.Label(row_frame, text="Vuelta")
-    combo.pack(side='right', padx=5)
-
-def on_frame_configure(canvas):
-    """Actualizar la región desplazable del canvas para que cubra el contenido completo."""
-    canvas.configure(scrollregion=canvas.bbox("all"))
-
-def select_file():
-    """Abre un cuadro de diálogo para seleccionar un archivo y lo procesa."""
-    filepath = filedialog.askopenfilename()
-    directory, filename = os.path.split(filepath)
-
-    current_file, laps = analizar_csv(filepath)
-    if current_file is None or laps is None:
-        add_file_row(filename, "Error", laps)  # Agregar fila con error
-    else:
-        add_file_row(filename, "Success", laps)  # Agregar fila con éxito
-
-def add_file_row(filepath, status, laps):
-    """Agrega una fila a la lista de archivos."""
-    row_frame = tk.Frame(file_list_frame)
-    row_frame.pack(side="top",padx=5, pady=5)  # Usar "center" para centrar horizontalmente
-    row_frame.pack(fill='both', expand=True)
-
-    # Asignar valores para el Combobox
-    comboValues = []
-
-    # Configurar el icono basado en el estado
-    if status == "Success":
-        icon = "✔️"  
-        comboValues.extend(laps)  # Agregar los laps si el estado es exitoso
-    else:
-        icon = "❌"
-        comboValues.append("Invalido")
-
-    # Crear el icono de estado
-    icon_label = tk.Label(row_frame, text=icon, font=("Arial", 14))
-    icon_label.pack(side='left')
-
-    # Mostrar el nombre del archivo
-    filename_label = tk.Label(row_frame, text=os.path.basename(filepath), width=30, anchor='w')
-    filename_label.pack(side='left', padx=5)
-
-    # Crear el Combobox con los valores
-    combo = ttk.Combobox(row_frame, values=comboValues, state="readonly")
-    combo.pack(side='left', padx=5)
-
-    # Botón para eliminar la fila
-    delete_button = tk.Button(row_frame, text="Eliminar", command=lambda: delete_file_row(row_frame))
-    delete_button.pack(side='right', padx=5)
-
-
-def delete_file_row(row_frame):
-    """Elimina la fila de archivos."""
-    row_frame.destroy()
-
-def visualizar(file_list_frame):
-    plt.close('all')
-    plt.figure(figsize=(10, 6))
-    cont = 0
-
-    for child in file_list_frame.children.values():
-        if isinstance(child, tk.Frame):
-            # Obtener el estado de la fila
-            status_label = child.winfo_children()[0]  # Asumimos que el icono está primero
-            status = status_label.cget("text")
-
-            if status == "✔️":  # Comprobar si el estado es éxito
-                # Obtener el nombre del archivo
-                filename_label = child.winfo_children()[1]  # Asumimos que el nombre está en la segunda posición
-                current_file = filename_label.cget("text")
-
-                # Obtener el valor del Combobox
-                combo_box = child.winfo_children()[2]  # Asumimos que el Combobox está en la tercera posición
-                combo_value = combo_box.get()  # Obtener el valor seleccionado en el Combobox
-                try:
-                    lap = int(combo_value)
-                except:
-                    continue
-
-                # Aquí llamas a tu función para obtener los datos
-                data = trim_csv(rename_file(current_file), lap)
-                
-                plt.plot(data['distance_traveled'], data['speed'], label=current_file[:-4], color=COLORS[cont % len(COLORS)])
-                cont += 1
-    if cont > 0:
-        plt.title('Laptimes')
-        plt.xlabel('Distancia recorrida (metros)')
-        plt.ylabel('Velocidad (km/h)')
-        plt.legend()
-        plt.grid(True)
-        plt.show()
-
+from PyQt5 import QtWidgets, QtCore, QtGui
+import sys
 
 
 if not os.path.exists(RENAME_DIR):
-        os.makedirs(RENAME_DIR)
+    os.makedirs(RENAME_DIR)
 
-# Crear la ventana principal
-root = tk.Tk()
-root.title("RaceChrono-Graphs")
-root.geometry("740x600")  # Tamaño de la ventana
-root.minsize(740, 600)
-root.maxsize(740, 600)
+class MainWindow(QtWidgets.QWidget):
+    def __init__(self):
+        super().__init__()
 
-# Cambiar el tema
-style = ttk.Style()
-style.theme_use('clam')
+        # Configurar la ventana principal
+        self.setWindowTitle("Race-Graphs")
+        self.setGeometry(100, 100, 740, 600)
 
-# Título
-title_label = tk.Label(root, text="RaceChrono-Graphs", font=("Arial", 16))
-title_label.pack(pady=10)
+        # Crear el layout principal
+        layout = QtWidgets.QVBoxLayout()
 
-#Botón para añadir ficheros
-add_file_button = tk.Button(root, text="Importar CSV*", command=select_file)
-add_file_button.pack(pady=10)
+        # Título
+        title_label = QtWidgets.QLabel("Race-Graphs")
+        title_label.setFont(QtGui.QFont("Arial", 16))
+        layout.addWidget(title_label, alignment=QtCore.Qt.AlignCenter)
 
-main_frame = tk.Frame(root)
-main_frame.pack(fill="both", expand=True)
+        # Botón para añadir ficheros
+        add_file_button = QtWidgets.QPushButton("Importar CSV*")
+        add_file_button.clicked.connect(self.select_file)
+        layout.addWidget(add_file_button, alignment=QtCore.Qt.AlignCenter)
 
-# Crear un frame para envolver el canvas y la scrollbar
-frame_container = tk.Frame(main_frame)
-frame_container.pack(side="top", fill="both", padx=10, pady=10, expand=True)
+        # Crear un marco para el contenido desplazable
+        self.file_list_frame = QtWidgets.QFrame()
+        self.file_list_layout = QtWidgets.QVBoxLayout(self.file_list_frame)
 
-# Crear un canvas para añadir el frame desplazable
-canvas = tk.Canvas(frame_container)
-canvas.pack(side="left", fill="both", expand=True)
+        # Crear un área de desplazamiento
+        self.scroll_area = QtWidgets.QScrollArea()
+        self.scroll_area.setWidgetResizable(True)
+        self.scroll_area.setWidget(self.file_list_frame)
 
-# Añadir una scrollbar al canvas
-scrollbar = tk.Scrollbar(frame_container, orient="vertical", command=canvas.yview)
-scrollbar.pack(side="right", fill="y")
+        layout.addWidget(self.scroll_area)
 
-# Configurar el canvas con la scrollbar
-canvas.configure(yscrollcommand=scrollbar.set)
+        # Botón para visualizar
+        visualize_button = QtWidgets.QPushButton("Visualizar")
+        visualize_button.clicked.connect(self.visualize)
+        visualize_button.setStyleSheet("background-color: blue; color: white; font-size: 14px;")
+        layout.addWidget(visualize_button, alignment=QtCore.Qt.AlignCenter)
 
-# Frame que contendrá las filas de archivos, y está dentro del canvas
-file_list_frame = tk.Frame(canvas)
+        # Texto de ayuda
+        help_label = QtWidgets.QLabel("*Recuerda que debe ser un CSV v3 de RaceChrono")
+        help_label.setFont(QtGui.QFont("Arial", 6))
+        layout.addWidget(help_label, alignment=QtCore.Qt.AlignRight)
 
-# Crear una ventana dentro del canvas para que el frame sea desplazable
-canvas.create_window((0, 0), window=file_list_frame, anchor="nw")
+        self.setLayout(layout)
 
-# Asegurar que el canvas se ajuste a la altura de su contenido
-file_list_frame.bind("<Configure>", lambda e: on_frame_configure(canvas))
+    def select_file(self):
+        """Abre un cuadro de diálogo para seleccionar un archivo y lo procesa."""
+        filepath, _ = QtWidgets.QFileDialog.getOpenFileName(self, "Seleccionar archivo CSV", "", "CSV Files (*.csv)")
+        if not filepath:
+            return  # Salir si no se selecciona un archivo
 
-# Añadir una fila de cabeceras (si es necesario)
-add_file_row_header()
+        directory, filename = os.path.split(filepath)
 
-# Botón para visualizar siempre visible
-visualize_button = tk.Button(root, text="Visualizar", command=lambda: visualizar(file_list_frame), bg="blue", fg="white", font=("Arial", 14))
-visualize_button.pack(side="bottom", pady=10)
+        current_file, laps = analizar_csv(filepath)
+        if current_file is None or laps is None:
+            self.add_file_row(filename, "Error", [])  # Agregar fila con error
+        else:
+            self.add_file_row(filename, "Correcto", laps)  # Agregar fila con éxito
 
-# Texto de ayuda siempre visible
-help_label = tk.Label(root, text="*Recerda que debe ser un CSV v3 de RaceChrono", font=("Arial", 6))
-help_label.pack(side="bottom", anchor="se")
+    def add_file_row(self, filename, status, laps):
+        """Agrega una fila a la lista de archivos con su estado y un botón para eliminar."""
+        row_frame = QtWidgets.QFrame()  # Crear un nuevo frame para la fila
+        row_layout = QtWidgets.QHBoxLayout(row_frame)
 
-# Ejecutar el bucle principal de la aplicación
-root.mainloop()
+        # Etiqueta para el estado
+        status_label = QtWidgets.QLabel(status)
+        if status == "Correcto":
+            status_label.setStyleSheet("color: green;")  # Color para éxito
+        else:
+            status_label.setStyleSheet("color: red;")  # Color para error
 
-# Limpiar caché (opcional)
-clear_cache_directory()
+        # Etiqueta para el nombre del archivo
+        filename_label = QtWidgets.QLabel(filename)
+        filename_label.setFont(QtGui.QFont("Arial", 10))
+
+        # Combobox para laps
+        combo_box = QtWidgets.QComboBox()
+        for lap in laps:  # Suponiendo que 'laps' es una lista de opciones
+            combo_box.addItem(str(lap))
+
+        # Botón de eliminar
+        delete_button = QtWidgets.QPushButton("Eliminar")
+        delete_button.clicked.connect(lambda: self.remove_file_row(row_frame))
+
+        # Añadir widgets al layout
+        row_layout.addWidget(status_label)
+        row_layout.addWidget(filename_label)
+        row_layout.addWidget(combo_box)
+        row_layout.addWidget(delete_button)  # Añadir el botón de eliminar
+
+        # Añadir la fila al layout de la lista de archivos
+        self.file_list_layout.addWidget(row_frame)  # Usar el layout para añadir el frame
+
+        #separator = QtWidgets.QFrame()
+        #separator.setFrameShape(QtWidgets.QFrame.HLine)  # Establecer como línea horizontal
+        #separator.setFrameShadow(QtWidgets.QFrame.Sunken)  # Sombrar la línea
+        #self.file_list_layout.addWidget(separator)  # Añadir el separador al layout
+
+    def remove_file_row(self, row_frame):
+        """Elimina la fila del archivo de la lista."""
+        row_frame.deleteLater()  # Eliminar la fila del layout
+    
+    def visualize(self):
+        plt.close('all')
+        plt.figure(figsize=(10, 6))
+        cont = 0
+        for i in range(self.file_list_layout.count()):
+            item = self.file_list_layout.itemAt(i)
+            # Imprimir información sobre el item actual
+            if item is None:
+                continue
+            
+            # Verificar si el item tiene un widget asociado
+            widget = item.widget()
+            if widget is None:
+                continue
+            # Asegúrate de que sea un QFrame
+            if isinstance(widget, QtWidgets.QFrame):
+                row_layout = widget.layout()
+                if row_layout:
+                    # Obtener el estado de la fila
+                    status_label = row_layout.itemAt(0).widget()  # Suponiendo que el estado está en la primera posición
+                    status = status_label.text()
+
+                    if status == "Correcto":  # Comprobar si el estado es éxito
+                        # Obtener el nombre del archivo
+                        filename_label = row_layout.itemAt(1).widget()  # Suponiendo que el nombre está en la segunda posición
+                        current_file = filename_label.text()
+                        print(f"Archivo actual: {current_file}")  # Imprimir el nombre del archivo
+
+                        # Obtener el valor del ComboBox
+                        combo_box = row_layout.itemAt(2).widget()  # Suponiendo que el ComboBox está en la tercera posición
+                        combo_value = combo_box.currentText()  # Obtener el valor seleccionado en el ComboBox
+                        print(f"Lap seleccionado: {combo_value}")  # Imprimir el valor del ComboBox
+
+                        try:
+                            lap = int(combo_value)  # Convertir a entero
+                        except ValueError:
+                            continue  # Si no se puede convertir a int, continuar
+
+                        # Aquí llamas a tu función para obtener los datos
+                        data = trim_csv(rename_file(current_file), lap)
+
+                        # Verificar si se obtuvieron datos
+                        if data is not None:
+                            plt.plot(data['distance_traveled'], data['speed'], label=current_file[:-4], color=COLORS[cont % len(COLORS)])
+                            cont += 1
+            
+        if cont > 0:
+            plt.title('Laptimes')
+            plt.xlabel('Distancia recorrida (metros)')
+            plt.ylabel('Velocidad (km/h)')
+            plt.legend()
+            plt.grid(True)
+            plt.show()
+
+    def closeEvent(self, event):
+        clear_cache_directory()
+        event.accept() 
+
+if __name__ == "__main__":
+    app = QtWidgets.QApplication(sys.argv)
+    window = MainWindow()
+    window.show()
+    sys.exit(app.exec_())
 
