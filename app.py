@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import os
 from plot import analizar_csv, trim_csv, COLORS, RENAME_DIR, RENAME_PREFIX, clear_cache_directory, rename_file
 from PyQt5 import QtWidgets, QtCore, QtGui
+from PyQt5.QtGui import QIcon
 import sys
 
 
@@ -15,6 +16,10 @@ class MainWindow(QtWidgets.QWidget):
 
         # Configurar la ventana principal
         self.setWindowTitle("Race-Graphs")
+
+        icon = QIcon("icon.ico")
+        self.setWindowIcon(icon)
+
         self.setGeometry(100, 100, 740, 600)
 
         # Crear el layout principal
