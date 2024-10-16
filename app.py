@@ -91,7 +91,7 @@ class MainWindow(QtWidgets.QWidget):
 
         # Combobox para laps
         combo_box = QtWidgets.QComboBox()
-        for lap in laps:  # Suponiendo que 'laps' es una lista de opciones
+        for lap in sorted(laps):  # Suponiendo que 'laps' es una lista de opciones
             combo_box.addItem(str(lap))
 
         # Botón de eliminar
